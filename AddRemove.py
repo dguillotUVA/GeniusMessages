@@ -9,6 +9,7 @@ user_file = os.path.join(path, 'users.txt')
 with open(settings_file, 'r') as f:
     settings = json.load(f)
 
+
 def get_user_info(settings, user_id):
     cnxn = pyodbc.connect('Driver={SQL Server};' + 'Server={};Database={};Port={};UID={};PWD={}'.format(settings["Server"], settings["Database"], settings["Port"], settings["User"], settings["Password"]))
     cnxn.setencoding('utf-8')
@@ -23,8 +24,11 @@ def get_user_info(settings, user_id):
 quit = "no"
 
 while quit != 'y':
-    with open(user_file, 'r') as f:
-        users = json.load(f)
+    try:
+        with open(user_file, 'r') as f:
+            users = json.load(f)
+    except:
+        users = {}
     add_remove = input("Do you wish to add or remove a user from a list (a/r)? ").lower()
 
     if add_remove == "a":
@@ -44,7 +48,7 @@ while quit != 'y':
                 else:
                     users[str(user_id)] = {"Name": user_info[1], "Email": user_info[2], "Type": notify_type}
 
-                    with open(user_file, 'w') as f:
+                    with open(user_file, 'w+') as f:
                         f.write(json.dumps(users))
 
                     print("The following was added to the user list:\nUser ID: {}\nName: {}\nEmail: {}\nType: {}\n".format(user_info[0], user_info[1], user_info[2], notify_type))

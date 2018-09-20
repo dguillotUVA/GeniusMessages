@@ -148,8 +148,14 @@ def simple_notifications(direct_ip, users, cursor, logs):
 
     return cursor, logs
 
-with open(log_file, 'r') as f:
-    logs = json.load(f)
+try:
+    with open(log_file, 'r') as f:
+        logs = json.load(f)
+except:
+    logs = {}
+    logs["Last Run"] = str(datetime.datetime.now())
+    logs["Last Full Message Index"] = 1000000
+    logs["Last Simple Message Index"] = 1000000
 
 while True:
     try:
