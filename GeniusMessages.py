@@ -153,21 +153,35 @@ def enroll_check(direct_ip, cursor, logs, user_file, users):
 
 	last_max_msg_index = logs["Last Enroll Message Index"]
 
-	cursor.execute("SELECT MESSAGEINDEX, USERINDEX, SENDER, SUBJECT, PRIVILEGE, EMAIL FROM OPENQUERY([{}],'SELECT mes.MessageIndex, mr.UserIndex, CONCAT(Users.FirstName, '' '', Users.LastName) AS Sender, Subject, Privilege, Email FROM Messages mes INNER JOIN MessageRecipients mr ON mes.MessageIndex = mr.MessageIndex INNER JOIN Users ON Users.UserIndex = mes.SenderUserIndex WHERE mr.UserIndex = mes.SenderUserIndex AND Users.Privilege NOT IN (''student'', ''guardian'', ''coach'', ''inactive'') AND mes.Subject IN (''Email Subscribe Simple'', ''Email Subscribe Full'', ''Email Unsubscribe'') AND mes.MessageIndex > {}') ORDER BY MESSAGEINDEX".format(direct_ip,last_max_msg_index))
+	cursor.execute("SELECT MESSAGEINDEX, USERINDEX, SENDER, SUBJECT, PRIVILEGE, EMAIL FROM OPENQUERY([{}],'SELECT mes.MessageIndex, mr.UserIndex, CONCAT(Users.FirstName, '' '', Users.LastName) AS Sender, Subject, Privilege, Email FROM Messages mes INNER JOIN MessageRecipients mr ON mes.MessageIndex = mr.MessageIndex INNER JOIN Users ON Users.UserIndex = mes.SenderUserIndex INNER JOIN (SELECT MAX(mes.MessageIndex) AS MessageIndex, mr.UserIndex FROM Messages mes INNER JOIN MessageRecipients mr ON mes.MessageIndex = mr.MessageIndex INNER JOIN Users ON Users.UserIndex = mes.SenderUserIndex WHERE mr.UserIndex = mes.SenderUserIndex AND Users.Privilege NOT IN (''student'', ''guardian'', ''coach'', ''inactive'') AND mes.Subject IN (''Email Subscribe Simple'', ''Email Subscribe Full'', ''Email Unsubscribe'') GROUP BY mr.UserIndex) Recent ON Recent.MessageIndex = mes.MessageIndex WHERE mes.MessageIndex > {}') ORDER BY MESSAGEINDEX".format(direct_ip,last_max_msg_index))
 	rows = cursor.fetchall()
 
 	for row in rows:
 		if last_max_msg_index < row[0]:
 			last_max_msg_index = row[0]
-		user_id = row[1]
+		user_id = str(row[1])
 		if row[3].lower() == "email subscribe simple" or row[3].lower() == "email subscribe full":
 			username = row[2]
 			user_email = row[5]
 			msg_type = row[3][16:]
 			users[str(user_id)] = {"Name": username, "Email": user_email, "Type": msg_type}
+			subject = "Genius Email Subscription"
+			if row[3].lower() == "email subscribe simple":
+				message_html = "You have subscribed to receive simple Genius notifications via email. You will receive email notifications along with a count of new unread messages in Genius. This is checked every 30 minutes. If you subscribed in error or no longer wish to receive these emails, please send a Genius message to yourself with the subject \"Email Unsubscribe\""
+			elif row[3].lower() == "email subscribe full":
+				message_html = "You have subscribed to receive an email copy of your unread Genius messages. Please note that <b><i>replies must be sent in Genius</b></i>. If you subscribed in error or no longer wish to receive these emails, please send a Genius message to yourself with the subject \"Email Unsubscribe\""
+			to = users[str(user_id)]["Email"]
+			message_plain = html2text.html2text(message_html)
+			SendMessage(sender, to, subject, message_html, message_plain)
 
 		elif row[3].lower() == "email unsubscribe":
-			del users[str(user_id)]
+			if str(user_id) in users:
+				subject = "Genius Email: Unsubscribed"
+				message_html = "You have unsubscribed from Genius notification emails. If you wish to subscribe again later, please send a Genius message to yourself with the subject \"Email Subscribe Simple\" to receive a 30 minute summary of new messages or \"Email Subscribe Full\" to receive full copies of new messages sent via email."
+				to = users[str(user_id)]["Email"]
+				message_plain = html2text.html2text(message_html)
+				del users[str(user_id)]
+				SendMessage(sender, to, subject, message_html, message_plain)
 
 	logs["Last Enroll Message Index"] = last_max_msg_index
 	logs["Last Enroll Run"] = str(datetime.datetime.now())
