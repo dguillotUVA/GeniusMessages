@@ -95,7 +95,7 @@ def full_genius_messages(direct_ip, users, cursor, logs):
 		subject = "[Genius Message]: " + row[3]
 		contents = row[4]
 		send_time = row[5]
-		message_html = "The following message was sent to you in Genius. Any responses should be sent in Genius.<br>Sender: {}<br>Time: {}<br>Subject: {}<br><br>".format(message_sender, send_time, subject) + contents
+		message_html = "The following message was sent to you in Genius. <b><i>Responses should be sent in Genius</b></i>.<br>Sender: {}<br>Time: {}<br>Subject: {}<br><br>".format(message_sender, send_time, subject) + contents
 		to = users[user_index]["Email"]
 		message_plain = html2text.html2text(message_html)
 		SendMessage(sender, to, subject, message_html, message_plain)
@@ -167,7 +167,7 @@ def enroll_check(direct_ip, cursor, logs, user_file, users):
 			users[str(user_id)] = {"Name": username, "Email": user_email, "Type": msg_type}
 			subject = "Genius Email Subscription"
 			if row[3].lower() == "email subscribe simple":
-				message_html = "You have subscribed to receive simple Genius notifications via email. You will receive email notifications along with a count of new unread messages in Genius. This is checked every 30 minutes. If you subscribed in error or no longer wish to receive these emails, please send a Genius message to yourself with the subject \"Email Unsubscribe\""
+				message_html = "You have subscribed to receive simple Genius notifications via email. Every 30 minutes, if you have new unready messages, you will receive an email notifications along with a count of new Genius messages. If you subscribed in error or no longer wish to receive these emails, please send a Genius message to yourself with the subject \"Email Unsubscribe\""
 			elif row[3].lower() == "email subscribe full":
 				message_html = "You have subscribed to receive an email copy of your unread Genius messages. Please note that <b><i>replies must be sent in Genius</b></i>. If you subscribed in error or no longer wish to receive these emails, please send a Genius message to yourself with the subject \"Email Unsubscribe\""
 			to = users[str(user_id)]["Email"]
